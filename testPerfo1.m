@@ -143,7 +143,6 @@ sgtitle(['Interpolated curves at ', num2str(queryRPM), ' RPM'])
 
 
 %% Interpolate among curves at given RPM
-% queryRPM = 6550; % desired RPM performance
 queryAdvRatio = linspace(0,max(allDataset(:,headFun(header,'J')))); % query advance ratio J array
 
 xVector = allDataset(:,headFun(header,'J'));
@@ -180,7 +179,7 @@ vVector = allDataset(:,headFun(header,'eff'));
 [vNorm, Cv, Sv] = normalize(vVector);
 fEfficiency = scatteredInterpolant(xNorm, yNorm, vNorm, 'linear', 'none');
 
-% Interpolate power among velocity and RPM
+% Interpolate efficiency among velocity and RPM
 efficiency = fEfficiency((queryAdvRatio-Cx)/Sx,repmat((queryRPM-Cy)/Sy,1,100));
 posDataIndex = efficiency*Sv+Cv > 0; % do not show data with negative efficiency
 interpEfficiency = [queryAdvRatio(posDataIndex)', efficiency(posDataIndex)'*Sv+Cv];
@@ -201,3 +200,35 @@ plot(interpEfficiency(:,1), interpEfficiency(:,2), 'k', 'LineWidth',2)
 grid on, xlabel('Advance ratio J'), ylabel('Prop. efficiency \eta')
 
 sgtitle(['Interpolated curves at ', num2str(queryRPM), ' RPM'])
+
+%% Interpolate propeller efficiency with airspeed
+
+figure, hold on
+for idx = 1:dataset
+    plot(apcPropPerfData{idx}.V_kph,apcPropPerfData{idx}.eff,'LineWidth',2)
+end
+hold off, grid on
+xlabel('V (km/h)'), ylabel('\eta'), title('Propeller efficiency')
+legend({[repmat('RPM ',dataset,1),num2str(rpm)]})
+
+
+xVector = allDataset(:,headFun(header,'V_kph'));
+yVector = allDataset(:,headFun(header,'RPM'));
+
+[xNorm, Cx, Sx] = normalize(xVector);
+[yNorm, Cy, Sy] = normalize(yVector);
+
+% Efficiency interpolant
+vVector = allDataset(:,headFun(header,'eff'));
+[vNorm, Cv, Sv] = normalize(vVector);
+fEffVsAirspeed = scatteredInterpolant(xNorm, yNorm, vNorm, 'linear', 'none');
+
+% Interpolate efficiency among velocity and RPM
+effVsAirspeed = fEffVsAirspeed((queryVelocity-Cx)/Sx,repmat((queryRPM-Cy)/Sy,1,100));
+posDataIndex = effVsAirspeed*Sv+Cv > 0; % do not show data with negative efficiency
+interpEffVsAirspeed = [queryVelocity(posDataIndex)', effVsAirspeed(posDataIndex)'*Sv+Cv];
+
+figure
+plot(interpEffVsAirspeed(:,1), interpEffVsAirspeed(:,2), 'k', 'LineWidth',2)
+grid on, xlabel('Velocity (Km/h)'), ylabel('Prop. efficiency \eta')
+title(['Interpolated curves at ', num2str(queryRPM), ' RPM'])
